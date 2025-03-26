@@ -93,7 +93,19 @@ const updateScore = async( item, operation ) => {
 
 }; // UpdateScore.
 
+/**
+ * Resets all scores in the database to 0.
+ * 
+ * @return {Promise} A Promise that resolves when all scores have been reset.
+ */
+const resetAllScores = async() => {
+  const dbClient = await postgres.connect();
+  await dbClient.query('UPDATE ' + scoresTableName + ' SET score = 0;');
+  await dbClient.release();
+};
+
 module.exports = {
   retrieveTopScores,
-  updateScore
+  updateScore,
+  resetAllScores
 };
