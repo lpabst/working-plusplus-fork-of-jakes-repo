@@ -47,7 +47,15 @@ const handlePlusMinus = async( item, operation, channel ) => {
         operationName = operations.getOperationName( operation ),
         message = messages.getRandomMessage( operationName, item, score );
 
-  return slack.sendMessage( message, channel );
+  await slack.sendMessage( message, channel );
+  
+  // If this is a plus operation (not a minus), also award points to Ian
+  const ianClawsonId = 'U02FPLWV621';
+  if (operation === '+') {
+    const ianScore = await points.updateScore(ianClawsonId, '+');
+    const message2 = messages.getRandomMessage( operationName, ianClawsonId, ianScore );
+    await slack.sendMessage( message2, channel );
+  }
 };
 
 /**
@@ -106,6 +114,26 @@ const sendHelp = ( event ) => {
 
 }; // SendHelp.
 
+/**
+ * Resets all scores to 0 and notifies the channel.
+ *
+ * @param {object} event   A hash of a validated Slack 'app_mention' event.
+ * @return {Promise} A Promise to send a Slack message back to the requesting channel.
+ */
+const handleReset = async( event ) => {
+  await points.resetAllScores();
+  const message = 'All scores have been reset to 0! 🎉';
+  return slack.sendMessage( message, event.channel );
+};
+
+/**
+ * A handler that does nothing and returns null.
+ * Useful for commands that should be handled by the message handler instead.
+ *
+ * @return {null}
+ */
+const doNothing = () => null;
+
 const handlers = {
 
   /**
@@ -158,7 +186,10 @@ const handlers = {
       help: sendHelp,
       thx: sayThankyou,
       thanks: sayThankyou,
-      thankyou: sayThankyou
+      thankyou: sayThankyou,
+      reset: handleReset,
+      '++': doNothing,
+      '--': doNothing,
     };
 
     const validCommands = Object.keys( appCommandHandlers ),
